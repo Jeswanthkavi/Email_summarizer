@@ -20,37 +20,15 @@ def main():
     )
 
 
-    digest = (
-        send_email_digest()
-    )
-
+    sent = send_email_digest()
 
     print()
-
-    print(
-        "Generated Digest:"
-    )
-
-    print()
-
-    print(
-        digest
-    )
-
-
-    print()
-
-    print(
-        "=" * 70
-    )
-
-    print(
-        "DIGEST SENT SUCCESSFULLY"
-    )
-
-    print(
-        "=" * 70
-    )
+    print("=" * 70)
+    if sent:
+        print("DIGEST SENT SUCCESSFULLY")
+    else:
+        print("NO UNSENT DIGEST EMAILS FOUND")
+    print("=" * 70)
 
 
 if __name__ == "__main__":

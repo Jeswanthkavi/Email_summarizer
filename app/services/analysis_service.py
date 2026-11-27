@@ -149,41 +149,27 @@ def process_unprocessed_emails():
 
 
                 # ==================================
-                # SAVE GEMINI RESULT
+                # SAVE GEMINI RESULT & MARK PROCESSED ATOMICALLY
                 # ==================================
 
-                saved_analysis = (
-                    save_email_analysis(
-
-                        db,
-
-                        email.id,
-
-                        analysis
-
-                    )
+                save_email_analysis(
+                    db,
+                    email.id,
+                    analysis,
+                    commit=False,
                 )
-
-
-                logger.success(
-
-                    f"Analysis saved for "
-                    f"email ID "
-                    f"{email.id}."
-
-                )
-
-
-                # ==================================
-                # MARK EMAIL AS PROCESSED
-                # ==================================
 
                 mark_email_processed(
-
                     db,
+                    email.id,
+                    commit=False,
+                )
 
-                    email.id
+                db.commit()
 
+                logger.success(
+                    f"Analysis saved and email ID "
+                    f"{email.id} marked as processed."
                 )
 
 

@@ -5,6 +5,10 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
+from app.config.settings import (
+    GMAIL_CREDENTIALS_FILE,
+    GMAIL_TOKEN_FILE,
+)
 from app.utils.logger import get_logger
 
 
@@ -17,15 +21,11 @@ logger = get_logger()
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-CREDENTIALS_DIR = BASE_DIR / "credentials"
+CREDENTIALS_DIR = GMAIL_CREDENTIALS_FILE.parent
 
-CLIENT_SECRET_FILE = (
-    CREDENTIALS_DIR / "gmail_credentials.json"
-)
+CLIENT_SECRET_FILE = GMAIL_CREDENTIALS_FILE
 
-TOKEN_FILE = (
-    CREDENTIALS_DIR / "gmail_token.json"
-)
+TOKEN_FILE = GMAIL_TOKEN_FILE
 
 
 # ==================================================

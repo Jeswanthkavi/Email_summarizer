@@ -1,10 +1,69 @@
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database.models import (
     Email,
     EmailAnalysis,
 )
+
+
+def _truncate_utf8(value: str | None, max_bytes: int = 60000) -> str | None:
+    """Safely truncate text so it fits MySQL TEXT (65,535 bytes) without splitting UTF-8 characters."""
+    if value is None:
+        return None
+    encoded = value.encode("utf-8", errors="ignore")
+    if len(encoded) <= max_bytes:
+        return value
+    return encoded[:max_bytes].decode("utf-8", errors="ignore")
+
+
+# ============================================================
+# SAVE EMAIL (WITH DUPLICATE PREVENTION)
+# ============================================================
+
+def save_email(
+    db: Session,
+    email_data: dict,
+) -> Email | None:
+    """Persist a fetched email if its gmail_message_id is not already stored."""
+    gmail_message_id = email_data.get("gmail_message_id")
+    if not gmail_message_id:
+        raise ValueError("email_data must include 'gmail_message_id'")
+
+    existing = (
+        db.query(Email)
+        .filter(Email.gmail_message_id == gmail_message_id)
+        .first()
+    )
+    if existing is not None:
+        return None
+
+    received_at = email_data.get("received_at") or email_data.get("date")
+    if received_at is not None:
+        received_at = str(received_at)[:255]
+
+    thread_id = email_data.get("thread_id")
+    if thread_id is not None:
+        thread_id = str(thread_id)[:255]
+
+    email = Email(
+        gmail_message_id=str(gmail_message_id)[:255],
+        thread_id=thread_id,
+        sender=_truncate_utf8(email_data.get("sender")),
+        subject=_truncate_utf8(email_data.get("subject")),
+        received_at=received_at,
+        body=_truncate_utf8(email_data.get("body")),
+    )
+
+    try:
+        db.add(email)
+        db.commit()
+        db.refresh(email)
+        return email
+    except IntegrityError:
+        db.rollback()
+        return None
 
 
 # ============================================================
@@ -79,7 +138,8 @@ def get_recent_email_analyses(
 def save_email_analysis(
     db,
     email_id,
-    analysis
+    analysis,
+    commit: bool = True,
 ):
 
     if not isinstance(
@@ -136,11 +196,13 @@ def save_email_analysis(
         email_analysis
     )
 
-    db.commit()
-
-    db.refresh(
-        email_analysis
-    )
+    if commit:
+        db.commit()
+        db.refresh(
+            email_analysis
+        )
+    else:
+        db.flush()
 
 
     return email_analysis
@@ -152,7 +214,8 @@ def save_email_analysis(
 
 def mark_email_processed(
     db,
-    email_id
+    email_id,
+    commit: bool = True,
 ):
 
     email = (
@@ -176,11 +239,13 @@ def mark_email_processed(
         email
     )
 
-    db.commit()
-
-    db.refresh(
-        email
-    )
+    if commit:
+        db.commit()
+        db.refresh(
+            email
+        )
+    else:
+        db.flush()
 
 
     return email

@@ -7,8 +7,10 @@ google-auth-httplib2
 python-dotenv
 
 mysql-connector-python
-SQLAlchemy
+SQLAlchemy>=2.0,<2.1
 pymysql
+
+requests
 
 beautifulsoup4
 lxml
